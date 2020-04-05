@@ -13,4 +13,14 @@ def lowestFcost(inputList):
             lowestValue = i.f
     if len(lowList) == 1:
         return lowList[0]
-    return lowList[random.randint(0,len(lowList) - 1)]
+    else:
+        lowestH = inputList[lowList[0]].h
+        bestIndex = lowList[0]
+        for index in lowList:
+            currentNode = inputList[index]
+            currentH = currentNode.h
+            if currentH < lowestH:
+                bestIndex = index
+                lowestH = inputList[index].h
+
+        return bestIndex

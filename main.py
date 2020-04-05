@@ -6,8 +6,18 @@ import os
 from drawGrid import createGrid
 from controller import Controller
 from findLowest import lowestFcost
+import pickle
 
 root = tk.Tk()
+mainMenu = Menu()
+# creates the menu at the top
+root.config(menu=mainMenu)
+# configures it
+fileMenu = Menu()
+mainMenu.add_cascade(label="File", menu=fileMenu)
+# this adds a dropdown menu called file to the mainMenu thing at the top
+
+
 times = tkFont.Font(family="Times", size=20)
 embed = tk.Frame(root, width = 500, height = 500) #creates embed frame for pygame window
 embed.grid(columnspan = (500), rowspan = 500) # Adds grid
@@ -21,7 +31,7 @@ screen.fill(pygame.Color(255,255,255))
 pygame.display.init()
 clock = pygame.time.Clock()
 
-MainControl = Controller()
+MainControl = Controller(screen)
 
 MainControl.grid = createGrid( 25,25, 500, 500, 20, screen)
 
@@ -36,7 +46,8 @@ def setDraw():
     MainControl.placingStart = False
     MainControl.placingEnd = False
     MainControl.drawing = True
-def reset():
+
+def totalReset():
     MainControl.startingNode = None
     MainControl.targetNode = None
     MainControl.grid = createGrid(25, 25, 500, 500, 20, screen)
@@ -46,7 +57,13 @@ def reset():
         square.draw(screen)
         pygame.display.update()
         root.update()
-    print('gamer')
+def reset():
+    for square in MainControl.grid:
+        if not square.obstacle and not square.start and not square.end:
+            square.color = (255,255,255)
+        square.draw(screen)
+        pygame.display.update()
+        root.update()
 def setStart():
     MainControl.placingStart = True
     MainControl.placingEnd = False
@@ -67,6 +84,12 @@ def run():
         MainControl.placingStart = False
         MainControl.placingEnd = False
         MainControl.drawing = False
+
+
+fileMenu.add_command(label="New Project...", command=totalReset)
+fileMenu.add_separator()
+fileMenu.add_command(label="Save", command=MainControl.saveInfo)
+fileMenu.add_command(label="Open", command=MainControl.openInfo)
 
 button1 = Button(buttonwin, text='Draw', command=setDraw, width=5, height=2,font=times)
 button2 = Button(buttonwin, text = 'Reset', command=reset, width=5, height=2,font=times)
@@ -139,7 +162,7 @@ while not done:
                         square.draw(screen)
 
     currentNode = None
-    open = []
+    openList = []
     closed = []
     while MainControl.running:
         for event in pygame.event.get():
@@ -150,23 +173,24 @@ while not done:
                 quit()
                 exit()
 
-        if open == []:
-            open.append(MainControl.startingNode)
+        if openList == []:
+            openList.append(MainControl.startingNode)
 
-        currentNodeIndex = lowestFcost(open)
-        currentNode = open[currentNodeIndex]
+        currentNodeIndex = lowestFcost(openList)
+        currentNode = openList[currentNodeIndex]
         if currentNode != MainControl.startingNode and currentNode != MainControl.targetNode:
             currentNode.color = (200,200,200)
         currentNode.draw(screen)
         pygame.display.update()
         closed.append(currentNode)
-        open.pop(currentNodeIndex)
+        openList.pop(currentNodeIndex)
 
         if currentNode == MainControl.targetNode:
             print("done")
             tempNode = currentNode
             while tempNode != MainControl.startingNode :
                 tempNode.parent.color = (255,255,0)
+                MainControl.startingNode.color =(0,255,0)
                 tempNode.draw(screen)
                 pygame.display.update()
                 tempNode = tempNode.parent
@@ -183,17 +207,23 @@ while not done:
 
                     if node != MainControl.targetNode:
                         node.color = (0,255,255)
-                    node.g = currentNode.g + distBetween(currentNode.pos, node.pos, MainControl.interval)
-                    node.h = distBetween(node.pos, MainControl.targetNode.pos, MainControl.interval)
-                    node.f = node.g + node.h
+
                     node.draw(screen)
                     pygame.display.update()
 
-                    if(node in open):
+                    if(node in openList):
                         if node.g > currentNode.g:
                             continue
+                        else:
+                            node.g = currentNode.g + distBetween(currentNode.pos, node.pos, MainControl.interval)
+                            node.f = node.g + node.h
+                            node.parent = currentNode
+
+                    node.g = currentNode.g + distBetween(currentNode.pos, node.pos, MainControl.interval)
+                    node.h = distBetween(node.pos, MainControl.targetNode.pos, MainControl.interval)
+                    node.f = node.g + node.h
                     node.parent = currentNode
-                    open.append(node)
+                    openList.append(node)
         clock.tick(60)
 
 
